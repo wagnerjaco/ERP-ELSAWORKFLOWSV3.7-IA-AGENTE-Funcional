@@ -8,7 +8,7 @@
       },
       "dotnetRunMessages": true,
       "inspectUri": "/login",
-      "applicationUrl": "http://192.168.5.57:5280"
+      "applicationUrl": "http://localhost:5280"
     },
     "https": {
       "commandName": "Project",
@@ -18,7 +18,7 @@
       },
       "dotnetRunMessages": true,
       "inspectUri": "/login",
-      "applicationUrl": "https://192.168.5.57:7777;https://localhost:7777"
+      "applicationUrl": "https://localhost:7777;https://localhost:7777"
     },
     "IIS Express": {
       "commandName": "IISExpress",
