@@ -1,3 +1,5 @@
+Projeto de estudo aplicando soluções reais a um cenario empresario, com BPMN, orquestração e IA integrada Local e externa
+
 # ERP Elsa Workflows
 Sistema ERP completo desenvolvido em **.NET 9** com **Blazor WebAssembly**, integrado ao **Elsa Workflows 3.6.1** para automação de processos de negócio e um **assistente de IA** ("ConsultorERP") com chamada de funções.
 ## Funcionalidades
