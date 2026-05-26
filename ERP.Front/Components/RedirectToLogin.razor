@@ -1,0 +1,26 @@
+
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        @ChildContent
+    </Authorized>
+    <NotAuthorized>
+        @{
+            var returnUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+            if (!string.IsNullOrEmpty(returnUrl))
+            {
+                Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+            }
+            else
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+            }
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

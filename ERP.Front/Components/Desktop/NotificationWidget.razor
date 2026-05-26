@@ -1,0 +1,266 @@
+@using ERP.Front.Services
+@inject NotificationService NotificationService
+@inject WinBoxService WinBoxService
+@inject IJSRuntime JSRuntime
+
+<div class="notification-widget @(IsOpen ? "open" : "")"
+     style="position: fixed; top: @(Top)px; left: @(Left)px; right: auto; z-index: 2000;"
+     @ref="widgetRef">
+    <button class="notification-trigger" @onclick="ToggleWidget">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        @if (totalCount > 0)
+        {
+            <span class="notification-badge">@totalCount</span>
+        }
+    </button>
+
+    @if (IsOpen)
+    {
+        <div class="notification-panel">
+            <div class="notification-header">
+                <div class="notification-tabs">
+                    <button class="tab @(activeTab == "pedidos" ? "active" : "")" @onclick="() => PedidosTabClick()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        Pedidos
+                        @if (pedidosCount > 0)
+                        {
+                            <span class="tab-count">@pedidosCount</span>
+                        }
+                    </button>
+                    <button class="tab @(activeTab == "estoque" ? "active" : "")" @onclick="() => EstoqueTabClick()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                        Estoque
+                        @if (estoqueCount > 0)
+                        {
+                            <span class="tab-count">@estoqueCount</span>
+                        }
+                    </button>
+                </div>
+                <button class="refresh-btn" @onclick="RefreshNotifications" title="Atualizar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="@(isLoading ? "spinning" : "")">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="notification-body">
+                @if (isLoading)
+                {
+                    <div class="notification-loading">
+                        <div class="spinner"></div>
+                    </div>
+                }
+                else if (activeTab == "pedidos")
+                {
+                    @if (!pedidos.Any())
+                    {
+                        <div class="notification-empty">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            <span>Nenhum pedido pendente</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="notification-list">
+                            @foreach (var item in pedidos)
+                            {
+                                <div class="notification-item" @onclick="() => OpenNotification(item)">
+                                    <div class="item-icon pedido">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                        </svg>
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">@item.Title</div>
+                                        <div class="item-subtitle">@item.Subtitle</div>
+                                        <div class="item-secondary">@item.SecondaryText</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else if (activeTab == "estoque")
+                {
+                    @if (!estoqueItems.Any())
+                    {
+                        <div class="notification-empty">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            <span>Estoque normal</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="notification-list">
+                            @foreach (var item in estoqueItems)
+                            {
+                                <div class="notification-item" @onclick="() => OpenNotification(item)">
+                                    <div class="item-icon estoque">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="item-content">
+                                        <div class="item-title">@item.Title</div>
+                                        <div class="item-subtitle">@item.Subtitle</div>
+                                        @if (!string.IsNullOrEmpty(item.SecondaryText))
+                                        {
+                                            <div class="item-secondary">@item.SecondaryText</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool IsOpen { get; set; } = false;
+    private string activeTab { get; set; } = "pedidos";
+    private bool isLoading { get; set; } = false;
+    private int totalCount { get; set; } = 0;
+    private int pedidosCount { get; set; } = 0;
+    private int estoqueCount { get; set; } = 0;
+    private List<NotificationItem> pedidos { get; set; } = new();
+    private List<NotificationItem> estoqueItems { get; set; } = new();
+    private System.Threading.Timer? timer;
+    private ElementReference widgetRef;
+    private double Top = 20;
+    private double Left;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+        StartTimer();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var screenWidth = await JSRuntime.InvokeAsync<int>("eval", "window.innerWidth");
+            Left = screenWidth - 64;
+            await JSRuntime.InvokeVoidAsync("makeDraggable", widgetRef,
+                DotNetObjectReference.Create(this));
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void UpdatePosition(double top, double left)
+    {
+        Top = top;
+        Left = left;
+        StateHasChanged();
+    }
+
+    private void StartTimer()
+    {
+        timer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadNotifications();
+            });
+        }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    public async Task LoadNotifications()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await NotificationService.GetNotificationsAsync();
+            pedidos = response.PedidosPendentes;
+            estoqueItems = response.EstoqueBaixo;
+            pedidosCount = response.PedidosPendentes.Count;
+            estoqueCount = response.EstoqueBaixo.Count;
+            totalCount = response.TotalCount;
+        }
+        catch
+        {
+            pedidos = new List<NotificationItem>();
+            estoqueItems = new List<NotificationItem>();
+            pedidosCount = 0;
+            estoqueCount = 0;
+            totalCount = 0;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleWidget()
+    {
+        IsOpen = !IsOpen;
+        if (IsOpen)
+        {
+            _ = LoadNotifications();
+        }
+    }
+
+    // private void SetTab(string tab)
+    // {
+    //     activeTab = tab;
+    // }
+
+    // private void TabClick(string tab)
+    // {
+    //     activeTab = tab;
+    // }
+    private void PedidosTabClick()
+    {
+        activeTab = "pedidos";
+    }
+    private void EstoqueTabClick()
+    {
+        activeTab = "estoque";
+    }
+    private async Task RefreshNotifications()
+    {
+        await LoadNotifications();
+    }
+
+    private async Task OpenNotification(NotificationItem item)
+    {
+        var windowId = !string.IsNullOrEmpty(item.WindowId) ? item.WindowId : $"{item.Type}-notification-{item.Id}";
+        var title = item.Type == "pedido" ? "Pedido de Compra" : "Novo Pedido de Compra";
+
+        await WinBoxService.OpenWindow(windowId, title, item.Url, 1000, 700);
+        IsOpen = false;
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+}

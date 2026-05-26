@@ -1,0 +1,501 @@
+@page "/chatbot"
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+@inject AuthService Auth
+
+<div class="chatbot-container">
+    <div class="chatbot-header">
+        <h5>Consultor ERP - Chatbot</h5>
+        <small>Pergunte sobre estoque, pedidos e fornecedores</small>
+    </div>
+
+    <div class="chatbot-messages" @ref="messagesContainer">
+        @foreach (var message in messages)
+        {
+            <div class="message @(message.IsUser ? "user" : "bot")">
+                <div class="message-content">
+                    @if (message.IsUser)
+                    {
+                        <p>@message.Text</p>
+                    }
+                    else
+                    {
+                        @((MarkupString)message.FormattedText)
+                    }
+                </div>
+                <div class="message-time">@message.Timestamp.ToString("HH:mm")</div>
+            </div>
+        }
+
+        @if (isLoading)
+        {
+            <div class="message bot">
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="chatbot-input">
+        <textarea @bind="inputMessage"
+                  @bind:event="oninput"
+                  @onkeydown="HandleKeyDown"
+                  placeholder="Digite sua pergunta..."
+                  rows="2"></textarea>
+        <button @onclick="SendMessage" disabled="@(isLoading || string.IsNullOrWhiteSpace(inputMessage))">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+
+    <div class="chatbot-suggestions">
+        @foreach (var suggestion in suggestions)
+        {
+            <button @onclick="() => SendSuggestion(suggestion)">@suggestion</button>
+        }
+    </div>
+</div>
+
+<style>
+    .chatbot-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: #1e1e2e;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .chatbot-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 16px 20px;
+        text-align: center;
+    }
+
+    .chatbot-header h5 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .chatbot-header small {
+        opacity: 0.85;
+        font-size: 0.8rem;
+    }
+
+    .chatbot-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #1e1e2e;
+    }
+
+    .message {
+        display: flex;
+        flex-direction: column;
+        max-width: 80%;
+    }
+
+    .message.user {
+        align-self: flex-end;
+    }
+
+    .message.bot {
+        align-self: flex-start;
+    }
+
+    .message-content {
+        padding: 12px 16px;
+        border-radius: 16px;
+        line-height: 1.5;
+        font-size: 0.95rem;
+    }
+
+    .message.user .message-content {
+        background: #667eea;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.bot .message-content {
+        background: #2d2d44;
+        color: #e0e0e0;
+        border-bottom-left-radius: 4px;
+    }
+
+    .message-content p {
+        margin: 0;
+        white-space: pre-wrap;
+    }
+
+    .message-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0;
+        font-size: 0.85rem;
+    }
+
+    .message-content table th,
+    .message-content table td {
+        border: 1px solid #444;
+        padding: 6px 10px;
+        text-align: left;
+    }
+
+    .message-content table th {
+        background: #3d3d5c;
+        color: #fff;
+    }
+
+    .message-content table td {
+        background: #2d2d44;
+    }
+
+    .message-content ul, .message-content ol {
+        margin: 8px 0;
+        padding-left: 20px;
+    }
+
+    .message-content code {
+        background: #3d3d5c;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Consolas', monospace;
+        font-size: 0.9em;
+    }
+
+    .message-content pre {
+        background: #3d3d5c;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    .message-content pre code {
+        background: none;
+        padding: 0;
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+        color: #888;
+        margin-top: 4px;
+        padding: 0 4px;
+    }
+
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 8px 0;
+    }
+
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+    @@keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    .chatbot-input {
+        display: flex;
+        gap: 10px;
+        padding: 16px 20px;
+        background: #2d2d44;
+        border-top: 1px solid #3d3d5c;
+    }
+
+    .chatbot-input textarea {
+        flex: 1;
+        background: #1e1e2e;
+        border: 1px solid #3d3d5c;
+        border-radius: 20px;
+        padding: 10px 16px;
+        color: #e0e0e0;
+        font-size: 0.95rem;
+        resize: none;
+        outline: none;
+        font-family: inherit;
+    }
+
+    .chatbot-input textarea:focus {
+        border-color: #667eea;
+    }
+
+    .chatbot-input button {
+        background: #667eea;
+        border: none;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .chatbot-input button:hover:not(:disabled) {
+        background: #764ba2;
+    }
+
+    .chatbot-input button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .chatbot-suggestions {
+        display: flex;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #2d2d44;
+        overflow-x: auto;
+    }
+
+    .chatbot-suggestions button {
+        background: #3d3d5c;
+        border: 1px solid #4d4d6c;
+        border-radius: 16px;
+        padding: 6px 14px;
+        color: #e0e0e0;
+        font-size: 0.8rem;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+
+    .chatbot-suggestions button:hover {
+        background: #4d4d6c;
+    }
+</style>
+
+@code {
+    private List<ChatMessage> messages = new();
+    private string inputMessage = string.Empty;
+    private bool isLoading = false;
+    private ElementReference messagesContainer;
+    private List<string> suggestions = new() { "Estoque atual", "Pedidos pendentes", "Fornecedores ativos" };
+
+    private Guid conversationId;
+    private string? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Nothing that depends on JS interop here
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            conversationId = await GetOrCreateConversationId();
+            userId = await GetUserId();
+            await LoadHistory();
+            StateHasChanged();
+        }
+        else
+        {
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task<Guid> GetOrCreateConversationId()
+    {
+        try
+        {
+            var stored = await JS.InvokeAsync<string>("localStorage.getItem", "chatbot_conversationId");
+            if (!string.IsNullOrEmpty(stored) && Guid.TryParse(stored, out var existing))
+                return existing;
+        }
+        catch { }
+
+        var newId = Guid.NewGuid();
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "chatbot_conversationId", newId.ToString());
+        }
+        catch { }
+        return newId;
+    }
+
+    private async Task<string?> GetUserId()
+    {
+        try
+        {
+            var user = await Auth.GetUserDataAsync();
+            return user?.Id;
+        }
+        catch { }
+        return null;
+    }
+
+    private async Task LoadHistory()
+    {
+        try
+        {
+            var backendUrl = Configuration["Backend:Url"] ?? "http://localhost:5000";
+            var response = await Http.GetAsync($"{backendUrl}/api/chatbot/history/{conversationId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<HistoryResponse>();
+                if (result?.messages != null)
+                {
+                    foreach (var msg in result.messages)
+                    {
+                        if (!string.IsNullOrWhiteSpace(msg.message))
+                            messages.Add(new ChatMessage { Text = msg.message, IsUser = true, Timestamp = DateTime.MinValue });
+                        if (!string.IsNullOrWhiteSpace(msg.response))
+                            messages.Add(new ChatMessage { Text = msg.response, IsUser = false, Timestamp = DateTime.MinValue });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Console.Error.WriteLine($"CHAT_DEBUG: LoadHistory error: {ex.Message}");
+        }
+
+        if (messages.Count == 0)
+        {
+            messages.Add(new ChatMessage
+            {
+                Text = "Olá! Sou o Consultor ERP. Como posso ajudar você hoje?",
+                IsUser = false,
+                Timestamp = DateTime.Now
+            });
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(inputMessage) || isLoading)
+            return;
+
+        var userMessage = inputMessage.Trim();
+        messages.Add(new ChatMessage { Text = userMessage, IsUser = true, Timestamp = DateTime.Now });
+        inputMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            var backendUrl = Configuration["Backend:Url"] ?? "http://localhost:5000";
+            var payload = new { message = userMessage, conversationId, userId };
+            var response = await Http.PostAsJsonAsync($"{backendUrl}/api/chatbot/send", payload);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ChatResponse>();
+                var botText = result?.response ?? "Nao foi possivel obter uma resposta.";
+                messages.Add(new ChatMessage { Text = botText, IsUser = false, Timestamp = DateTime.Now });
+
+                if (result?.conversationId != null && Guid.TryParse(result.conversationId, out var serverConvId) && serverConvId != conversationId)
+                {
+                    conversationId = serverConvId;
+                    try { await JS.InvokeVoidAsync("localStorage.setItem", "chatbot_conversationId", conversationId.ToString()); }
+                    catch { }
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                messages.Add(new ChatMessage { Text = $"Erro ao processar: {error}", IsUser = false, Timestamp = DateTime.Now });
+            }
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new ChatMessage { Text = $"Erro de conexao: {ex.Message}", IsUser = false, Timestamp = DateTime.Now });
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendSuggestion(string suggestion)
+    {
+        inputMessage = suggestion;
+        await SendMessage();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("scrollToBottom", messagesContainer);
+        }
+        catch { }
+    }
+
+    public class ChatMessage
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsUser { get; set; }
+        public DateTime Timestamp { get; set; }
+        public string FormattedText => FormatMessage(Text);
+    }
+
+    public class ChatResponse
+    {
+        public string? response { get; set; }
+        public string? raw { get; set; }
+        public string? conversationId { get; set; }
+    }
+
+    public class HistoryResponse
+    {
+        public List<HistoryMessage>? messages { get; set; }
+    }
+
+    public class HistoryMessage
+    {
+        public string? message { get; set; }
+        public string? response { get; set; }
+    }
+
+    private static string FormatMessage(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        var formatted = System.Net.WebUtility.HtmlEncode(text);
+
+        formatted = System.Text.RegularExpressions.Regex.Replace(formatted, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        formatted = System.Text.RegularExpressions.Regex.Replace(formatted, @"\*(.+?)\*", "<em>$1</em>");
+        formatted = System.Text.RegularExpressions.Regex.Replace(formatted, @"`([^`]+)`", "<code>$1</code>");
+        formatted = formatted.Replace("\n", "<br>");
+
+        return formatted;
+    }
+}

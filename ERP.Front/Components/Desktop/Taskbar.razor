@@ -1,0 +1,81 @@
+@inject WinBoxService WinBoxService
+
+<div class="taskbar">
+    <button class="start-button" @onclick="ToggleStartMenu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z"/>
+        </svg>
+        <span>Iniciar</span>
+    </button>
+
+    <div class="taskbar-divider"></div>
+
+    <div class="open-windows">
+        @foreach (var window in WinBoxService.Windows)
+        {
+            <button class="taskbar-item @(window.Value.IsFocused ? "focused" : "")" 
+                    @onclick="() => ToggleWindow(window.Key)">
+                <span class="window-title">@window.Value.Title</span>
+            </button>
+        }
+    </div>
+
+    <div class="taskbar-spacer"></div>
+
+    <div class="system-tray">
+        <div class="tray-time">@currentTime</div>
+    </div>
+</div>
+
+@if (showStartMenu)
+{
+    <div class="start-menu-overlay" @onclick="CloseStartMenu">
+        <StartMenu OnClose="CloseStartMenu" />
+    </div>
+}
+
+@code {
+    private bool showStartMenu;
+    private string currentTime = "";
+    private Timer? timer;
+
+    protected override void OnInitialized()
+    {
+        UpdateTime();
+        timer = new Timer(_ => UpdateTime(), null, 0, 1000);
+    }
+
+    private void UpdateTime()
+    {
+        currentTime = DateTime.Now.ToString("HH:mm");
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleStartMenu()
+    {
+        showStartMenu = !showStartMenu;
+    }
+
+    private void CloseStartMenu()
+    {
+        showStartMenu = false;
+    }
+
+    private async Task ToggleWindow(string id)
+    {
+        var window = WinBoxService.Windows[id];
+        if (window.IsMinimized || !window.IsFocused)
+        {
+            await WinBoxService.FocusWindow(id);
+        }
+        else
+        {
+            await WinBoxService.MinimizeWindow(id);
+        }
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+}

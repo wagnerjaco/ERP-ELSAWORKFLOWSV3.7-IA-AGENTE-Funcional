@@ -1,0 +1,18 @@
+﻿@inherits LayoutComponentBase
+
+<div class="auth-page">
+    <!-- 🎥 CAMADA DE VÍDEO DE FUNDO -->
+    <div class="video-background">
+        <video autoplay muted loop playsinline class="bg-video">
+            <!-- Certifique-se de que o arquivo está na pasta wwwroot/assets -->
+            <source src="assets/background.mp4" type="video/mp4" />
+        </video>
+        <!-- Overlay escuro opcional para melhorar a leitura -->
+        <div class="video-overlay"></div>
+    </div>
+
+    <!-- 📦 CONTEÚDO (SEU LOGIN.RAZOR) -->
+    <div class="auth-content">
+        @Body
+    </div>
+</div>

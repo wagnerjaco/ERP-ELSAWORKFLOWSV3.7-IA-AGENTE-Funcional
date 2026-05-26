@@ -1,0 +1,39 @@
+@ERP.Api_HostAddress = http://localhost:5168
+
+### Login
+POST {{ERP.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "senha": "password"
+}
+
+### Register
+POST {{ERP.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "senha": "password"
+}
+
+### Listar Categorias (protegido)
+GET {{ERP.Api_HostAddress}}/api/categoria
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Listar Produtos (protegido)
+GET {{ERP.Api_HostAddress}}/api/produto
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Listar Marcas (protegido)
+GET {{ERP.Api_HostAddress}}/api/marca
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Listar Fornecedores (protegido)
+GET {{ERP.Api_HostAddress}}/api/fornecedor
+Accept: application/json
+Authorization: Bearer {{token}}

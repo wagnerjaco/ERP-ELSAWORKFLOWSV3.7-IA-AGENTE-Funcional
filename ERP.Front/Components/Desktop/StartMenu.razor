@@ -1,0 +1,113 @@
+@inject WinBoxService WinBoxService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="start-menu" @onclick:stopPropagation="true">
+    <div class="start-menu-header">
+        <span class="user-name">EAP System</span>
+    </div>
+
+    <div class="start-menu-content">
+        <div class="start-menu-items">
+            <div class="start-menu-item" @onclick="OpenDashboard">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </div>
+                <span>Dashboard</span>
+            </div>
+
+            <div class="start-menu-item" @onclick="OpenCategorias">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                </div>
+                <span>Categorias</span>
+            </div>
+
+            <div class="start-menu-item" @onclick="OpenMarcas">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </div>
+                <span>Marcas</span>
+            </div>
+
+            <div class="start-menu-item" @onclick="OpenProdutos">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+                <span>Produtos</span>
+            </div>
+
+            <div class="start-menu-item" @onclick="OpenFornecedores">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                </div>
+                <span>Fornecedores</span>
+            </div>
+
+            <div class="start-menu-item" @onclick="OpenChatbot">
+                <div class="item-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+                </div>
+                <span>Chatbot ERP</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="start-menu-footer">
+        <button class="power-button" @onclick="Logout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            <span>Desligar</span>
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Action? OnClose { get; set; }
+
+    private async Task OpenDashboard()
+    {
+        await WinBoxService.OpenWindow("dashboard", "Dashboard", "/", 1000, 700);
+        OnClose?.Invoke();
+    }
+
+    private async Task OpenCategorias()
+    {
+        await WinBoxService.OpenWindow("categorias", "Categorias", "/categorias", 1000, 700);
+        OnClose?.Invoke();
+    }
+
+    private async Task OpenMarcas()
+    {
+        await WinBoxService.OpenWindow("marcas", "Marcas", "/marcas", 1000, 700);
+        OnClose?.Invoke();
+    }
+
+    private async Task OpenProdutos()
+    {
+        await WinBoxService.OpenWindow("produtos", "Produtos", "/produtos", 1000, 700);
+        OnClose?.Invoke();
+    }
+    private async Task OpenPedidoCompras()
+    {
+        await WinBoxService.OpenWindow("pedidosCompras", "Pedidos Compras", "/pedidoscompras", 1000, 700);
+        OnClose?.Invoke();
+    }
+    private async Task OpenFornecedores()
+    {
+        await WinBoxService.OpenWindow("fornecedores", "Fornecedores", "/fornecedores", 1000, 700);
+        OnClose?.Invoke();
+    }
+
+    private async Task OpenChatbot()
+    {
+        await WinBoxService.OpenWindow("chatbot", "Chatbot ERP", "/chatbot", 600, 700);
+        OnClose?.Invoke();
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        OnClose?.Invoke();
+    }
+}

@@ -1,0 +1,125 @@
+@page "/register"
+@layout AuthLayout
+@inject NavigationManager Nav
+@inject AuthService AuthService
+
+<div class="login-container">
+    <div class="login-card">
+        <h2 class="login-title">Criar Conta</h2>
+        <p class="login-subtitle">Preencha seus dados para se cadastrar</p>
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                @successMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                @errorMessage
+            </div>
+        }
+
+        <EditForm Model="@registerModel" OnValidSubmit="@HandleRegister">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="Nome">Nome</label>
+                <InputText @bind-Value="registerModel.Nome" class="form-control" id="Nome" placeholder="Seu nome completo" />
+                <ValidationMessage For="@(() => registerModel.Nome)" />
+            </div>
+
+            <div class="form-group">
+                <label for="Email">Email</label>
+                <InputText @bind-Value="registerModel.Email" class="form-control" id="Email" placeholder="seu@email.com" />
+                <ValidationMessage For="@(() => registerModel.Email)" />
+            </div>
+
+            <div class="form-group">
+                <label for="Senha">Senha</label>
+                <InputText type="password" @bind-Value="registerModel.Senha" class="form-control" id="Senha" placeholder="Mínimo 6 caracteres" />
+                <ValidationMessage For="@(() => registerModel.Senha)" />
+            </div>
+
+            <div class="form-group">
+                <label for="ConfirmarSenha">Confirmar Senha</label>
+                <InputText type="password" @bind-Value="registerModel.ConfirmarSenha" class="form-control" id="ConfirmarSenha" placeholder="Repita a senha" />
+                <ValidationMessage For="@(() => registerModel.ConfirmarSenha)" />
+            </div>
+
+            <button type="submit" class="btn-login" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner"></span>
+                    <text>Cadastrando...</text>
+                }
+                else
+                {
+                    <text>Cadastrar</text>
+                }
+            </button>
+        </EditForm>
+
+        <p class="login-footer">
+            Já tem conta? <a href="/login">Faça login</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private RegisterFormModel registerModel = new();
+    private bool isLoading = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        var result = await AuthService.RegisterAsync(new RegisterRequest
+        {
+            Email = registerModel.Email,
+            Senha = registerModel.Senha,
+            Nome = registerModel.Nome,
+            Permissao = Permissao.USUARIO
+        });
+
+        if (result.IsSuccess)
+        {
+            successMessage = "Conta criada com sucesso! Faça login para continuar.";
+            registerModel = new();
+        }
+        else
+        {
+            errorMessage = result.ErrorMessage;
+        }
+
+        isLoading = false;
+    }
+
+    private class RegisterFormModel
+    {
+        [Required(ErrorMessage = "Nome é obrigatório")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Nome deve ter entre 2 e 100 caracteres")]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email é obrigatório")]
+        [EmailAddress(ErrorMessage = "Email inválido")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Senha é obrigatória")]
+        [StringLength(50, MinimumLength = 6, ErrorMessage = "Senha deve ter no mínimo 6 caracteres")]
+        public string Senha { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirmação de senha é obrigatória")]
+        [Compare(nameof(Senha), ErrorMessage = "As senhas não coincidem")]
+        public string ConfirmarSenha { get; set; } = string.Empty;
+    }
+}

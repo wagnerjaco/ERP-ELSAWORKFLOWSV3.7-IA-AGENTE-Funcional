@@ -1,0 +1,193 @@
+@inject WinBoxService WinBoxService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="desktop-windows">
+    @foreach (var window in windows.Values.OrderBy(w => w.ZIndex))
+    {
+        @if (!window.IsMinimized)
+        {
+            <div class="desktop-window @(window.IsFocused ? "focused" : "")"
+                 style="width: @(window.Width)px; height: @(window.Height)px; left: @(window.X)px; top: @(window.Y)px; z-index: @(window.ZIndex);"
+                 data-window-id="@window.Id"
+                 @onmousedown="() => FocusWindow(window.Id)">
+                <div class="window-header" data-window-id="@window.Id">
+                    <span class="window-title">
+                        @if (GetWindowIcon(window.Id) is string icon)
+                        {
+                            @((MarkupString)icon)
+                        }
+                        @window.Title
+                    </span>
+                    <div class="window-controls">
+                        <button class="control-btn minimize" @onclick="() => MinimizeWindow(window.Id)" title="Minimizar">
+                            <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.5" /></svg>
+                        </button>
+                        <button class="control-btn maximize" @onclick="() => MaximizeWindow(window.Id)" title="Maximizar">
+                            <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+                        </button>
+                        <button class="control-btn close" @onclick="() => CloseWindow(window.Id)" title="Fechar">
+                            <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" /><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.5" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="window-body">
+                    <div class="page-content @GetPageClass(window.Id)">
+                        @if (window.IsExternal)
+                        {
+                            <iframe src="@window.Url" style="width: 100%; height: 100%; border: none;"></iframe>
+                        }
+                        else if (window.Id == "dashboard")
+                        {
+                            <Home />
+                        }
+                        else if (window.Id == "categorias")
+                        {
+                            <Categorias />
+                        }
+                        else if (window.Id == "marcas")
+                        {
+                            <Marcas />
+                        }
+                        else if (window.Id == "produtos")
+                        {
+                            <Produtos />
+                        }
+                        else if (window.Id == "pedidosCompras")
+                        {
+                            <PedidosCompras />
+                        }
+                        else if (window.Id == "fornecedores")
+                        {
+                            <Fornecedores />
+                        }
+                        else if (window.Id.StartsWith("categoria-edit-"))
+                        {
+                            var id = window.Id.Replace("categoria-edit-", "");
+                            <CategoriaEdit Id="@(string.IsNullOrEmpty(id) || id == "nova" ? null : Guid.Parse(id))" />
+                        }
+                        else if (window.Id.StartsWith("marca-edit-"))
+                        {
+                            var id = window.Id.Replace("marca-edit-", "");
+                            <MarcaEdit Id="@(string.IsNullOrEmpty(id) || id == "nova" ? null : Guid.Parse(id))" />
+                        }
+                        else if (window.Id.StartsWith("produto-edit-"))
+                        {
+                            var id = window.Id.Replace("produto-edit-", "");
+                            <ProdutoEdit Id="@(string.IsNullOrEmpty(id) || id == "nova" ? null : Guid.Parse(id))" />
+                        }
+else if (window.Id.StartsWith("pedidosCompras-edit-"))
+        {
+            var id = window.Id.Replace("pedidosCompras-edit-", "");
+            <PedidoCompraEdit Id="@(string.IsNullOrEmpty(id) || id == "nova" ? null : Guid.Parse(id))" />
+        }
+                        else if (window.Id.StartsWith("pedido-notification-"))
+                        {
+                            var idStr = window.Id.Replace("pedido-notification-", "");
+                            @if (Guid.TryParse(idStr, out var pedidoId))
+                            {
+                                <PedidoCompraEdit Id="pedidoId" />
+                            }
+                        }
+                        else if (window.Id.StartsWith("estoque-widget-"))
+                        {
+                            var idStr = window.Id.Replace("estoque-widget-", "");
+                            @if (Guid.TryParse(idStr, out var produtoId))
+                            {
+                                <PedidoCompraWidget ProdutoId="produtoId" />
+                            }
+                        }
+                        else if (window.Id.StartsWith("fornecedor-edit-"))
+                        {
+                            var id = window.Id.Replace("fornecedor-edit-", "");
+                            <FornecedorEdit Id="@(string.IsNullOrEmpty(id) || id == "nova" ? null : Guid.Parse(id))" />
+                        }
+                        else if (window.Id == "chatbot")
+                        {
+                            <Chatbot />
+                        }
+                    </div>
+                </div>
+                <div class="window-resize resize-se"></div>
+                <div class="window-resize resize-e"></div>
+                <div class="window-resize resize-s"></div>
+                <div class="window-resize resize-w"></div>
+                <div class="window-resize resize-ne"></div>
+                <div class="window-resize resize-nw"></div>
+            </div>
+        }
+    }
+</div>
+
+@using ERP.Front.Pages
+@using ERP.Front.Models
+
+@code {
+    private IReadOnlyDictionary<string, WindowInfo> windows => WinBoxService.Windows;
+
+    protected override void OnInitialized()
+    {
+        WinBoxService.OnWindowsChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("DesktopWindowInterop.init", DotNetObjectReference.Create(this));
+        }
+    }
+
+    private string GetPageClass(string id) => id switch
+    {
+        "categorias" => "categorias-page",
+        "marcas" => "marcas-page",
+        "produtos" => "produtos-page",
+        "fornecedores" => "fornecedores-page",
+        _ => ""
+    };
+
+    private string? GetWindowIcon(string id) => id switch
+    {
+        "categorias" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#3b82f6' stroke-width='2'><path d='M12 2L2 7l10 5 10-5-10-5z'/><path d='M2 17l10 5 10-5'/><path d='M2 12l10 5 10-5'/></svg>",
+        "marcas" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#8b5cf6' stroke-width='2'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/></svg>",
+        "produtos" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#f59e0b' stroke-width='2'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'/></svg>",
+        "fornecedores" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#06b6d4' stroke-width='2'><path d='M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='8.5' cy='7' r='4'/></svg>",
+        "pedidosCompras" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#06b6d4' stroke-width='2'><path d='M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z'/><line x1='3' y1='6' x2='21' y2='6'/><path d='M16 10a4 4 0 0 1-8 0'/></svg>",
+        "chatbot" => "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#a78bfa' stroke-width='2'><path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/><line x1='9' y1='10' x2='15' y2='10'/><line x1='12' y1='7' x2='12' y2='13'/></svg>",
+        _ => null
+    };
+
+    private async Task FocusWindow(string id)
+    {
+        await WinBoxService.FocusWindow(id);
+    }
+
+    private async Task MinimizeWindow(string id)
+    {
+        await WinBoxService.MinimizeWindow(id);
+    }
+
+    private async Task MaximizeWindow(string id)
+    {
+        await WinBoxService.MaximizeWindow(id);
+    }
+
+    private async Task CloseWindow(string id)
+    {
+        await WinBoxService.CloseWindow(id);
+    }
+
+    [JSInvokable]
+    public void OnWindowDrag(string windowId, int x, int y)
+    {
+        WinBoxService.UpdateWindowPosition(windowId, x, y);
+    }
+
+    [JSInvokable]
+    public void OnWindowResize(string windowId, int x, int y, int width, int height)
+    {
+        WinBoxService.UpdateWindowPosition(windowId, x, y);
+        WinBoxService.UpdateWindowSize(windowId, width, height);
+    }
+}

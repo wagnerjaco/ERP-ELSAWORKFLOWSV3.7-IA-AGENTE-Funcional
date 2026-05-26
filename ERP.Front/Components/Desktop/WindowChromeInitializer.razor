@@ -1,0 +1,44 @@
+@inject IJSRuntime JS
+@inject WinBoxService WinBoxService
+@inject NavigationManager Navigation
+
+@code {
+    private DotNetObjectReference<WindowChromeInitializer>? dotNetRef;
+
+    protected override void OnInitialized()
+    {
+        dotNetRef = DotNetObjectReference.Create(this);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("WindowChrome.init", dotNetRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnChromeAction(string windowId, string action)
+    {
+        switch (action)
+        {
+            case "minimize":
+                await WinBoxService.MinimizeWindow(windowId);
+                Navigation.NavigateTo("/");
+                break;
+            case "maximize":
+                await WinBoxService.MaximizeWindow(windowId);
+                break;
+            case "close":
+                await WinBoxService.CloseWindow(windowId);
+                Navigation.NavigateTo("/");
+                break;
+        }
+    }
+
+    public void Dispose()
+    {
+        dotNetRef?.Dispose();
+    }
+}

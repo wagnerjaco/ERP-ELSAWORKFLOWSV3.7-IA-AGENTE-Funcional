@@ -1,0 +1,88 @@
+@inject WinBoxService WinBoxService
+@using ERP.Front.Pages
+
+<div class="windows-container">
+    @foreach (var window in WinBoxService.Windows.Values.OrderBy(w => w.ZIndex))
+    {
+        <div class="window @(window.IsFocused ? "focused" : "")" 
+             style="width: @(window.Width)px; height: @(window.Height)px; left: @(window.X)px; top: @(window.Y)px; z-index: @(window.ZIndex); display: @(window.IsMinimized ? "none" : "block");">
+            <div class="window-header" @onmousedown="(e) => StartDrag(e, window.Id)">
+                <span class="window-title">@window.Title</span>
+                <div class="window-controls">
+                    <button class="control-btn minimize" @onclick="() => MinimizeWindow(window.Id)" title="Minimizar">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </button>
+                    <button class="control-btn maximize" @onclick="() => MaximizeWindow(window.Id)" title="Maximizar">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </button>
+                    <button class="control-btn close" @onclick="() => CloseWindow(window.Id)" title="Fechar">
+                        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="window-content">
+                @if (window.IsExternal)
+                {
+                    <iframe src="@window.Url" style="width: 100%; height: 100%; border: none;" />
+                }
+                else
+                {
+                    @GetWindowContent(window.Id)
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isDragging;
+    private string? draggingWindowId;
+    private int dragOffsetX, dragOffsetY;
+
+    private void StartDrag(MouseEventArgs e, string windowId)
+    {
+        var window = WinBoxService.Windows.GetValueOrDefault(windowId);
+        if (window != null)
+        {
+            isDragging = true;
+            draggingWindowId = windowId;
+            dragOffsetX = (int)e.ClientX - window.X;
+            dragOffsetY = (int)e.ClientY - window.Y;
+            WinBoxService.FocusWindow(windowId);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        WinBoxService.OnWindowsChanged += StateHasChanged;
+    }
+
+    private async Task MinimizeWindow(string id)
+    {
+        await WinBoxService.MinimizeWindow(id);
+    }
+
+    private async Task MaximizeWindow(string id)
+    {
+        await WinBoxService.MaximizeWindow(id);
+    }
+
+    private async Task CloseWindow(string id)
+    {
+        await WinBoxService.CloseWindow(id);
+    }
+
+    private RenderFragment GetWindowContent(string id)
+    {
+        return id switch
+        {
+            "dashboard" => builder => builder.AddContent(0, @<Home />),
+            "categorias" => builder => builder.AddContent(0, @<Categorias />),
+            "marcas" => builder => builder.AddContent(0, @<Marcas />),
+            "produtos" => builder => builder.AddContent(0, @<Produtos />),
+            "fornecedores" => builder => builder.AddContent(0, @<Fornecedores />),
+            "pedidoscompras" => builder => builder.AddContent(0, @<PedidosCompras />),
+            _ => builder => builder.AddContent(0, "Janela não encontrada")
+        };
+    }
+}

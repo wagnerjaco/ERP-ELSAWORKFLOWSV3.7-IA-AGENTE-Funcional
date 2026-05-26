@@ -1,0 +1,80 @@
+.navbar-toggler {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.top-row {
+    min-height: 3.5rem;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.bi {
+    display: inline-block;
+    position: relative;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    top: -1px;
+    background-size: cover;
+}
+
+.nav-item {
+    font-size: 0.9rem;
+    padding-bottom: 0.25rem;
+}
+
+    .nav-item:first-of-type {
+        padding-top: 1rem;
+    }
+
+    .nav-item:last-of-type {
+        padding-bottom: 1rem;
+    }
+
+    .nav-item ::deep a {
+        color: #cbd5e1;
+        border-radius: 8px;
+        height: 2.75rem;
+        display: flex;
+        align-items: center;
+        line-height: 2.75rem;
+        padding: 0 1rem;
+        margin: 0 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .nav-item ::deep a.active {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .nav-item ::deep a:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .nav-item ::deep a svg {
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+@media (min-width: 641px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+    .collapse {
+        display: block;
+    }
+
+    .nav-scrollable {
+        height: calc(100vh - 3.5rem);
+        overflow-y: auto;
+    }
+}

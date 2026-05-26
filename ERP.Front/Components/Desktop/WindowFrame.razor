@@ -1,0 +1,68 @@
+@inject WinBoxService WinBoxService
+@inject NavigationManager Navigation
+
+<div class="window-frame">
+    <div class="window-header">
+        <span class="window-title">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <span class="title-icon">@((MarkupString)Icon)</span>
+            }
+            @Title
+        </span>
+        <div class="window-controls">
+            <button class="control-btn minimize" @onclick="Minimize" title="Minimizar">
+                <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button class="control-btn maximize" @onclick="Maximize" title="Maximizar">
+                <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+            <button class="control-btn close" @onclick="Close" title="Fechar">
+                <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+        </div>
+    </div>
+    <div class="window-body">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Janela";
+
+    [Parameter]
+    public string WindowId { get; set; } = "";
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private async Task Minimize()
+    {
+        if (!string.IsNullOrEmpty(WindowId))
+        {
+            await WinBoxService.MinimizeWindow(WindowId);
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task Maximize()
+    {
+        if (!string.IsNullOrEmpty(WindowId))
+        {
+            await WinBoxService.MaximizeWindow(WindowId);
+        }
+    }
+
+    private async Task Close()
+    {
+        if (!string.IsNullOrEmpty(WindowId))
+        {
+            await WinBoxService.CloseWindow(WindowId);
+        }
+        Navigation.NavigateTo("/");
+    }
+}

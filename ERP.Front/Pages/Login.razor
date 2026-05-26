@@ -1,0 +1,80 @@
+﻿@page "/login"
+@layout AuthLayout
+@inject NavigationManager Nav
+@inject AuthService AuthService
+@inject IJSRuntime JS
+
+<div class="login-container">
+    <div class="login-card">
+        <h2 class="login-title">Bem-vindo</h2>
+        <p class="login-subtitle">Faça login para continuar</p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-error">
+                <span class="oi oi-warning"></span>
+                @errorMessage
+            </div>
+        }
+
+        <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="Usuario">Username</label>
+                <InputText @bind-Value="loginModel.Usuario" class="form-control" id="Usuario" placeholder="Nome de Usuario" />
+                <ValidationMessage For="@(() => loginModel.Usuario)" />
+            </div>
+
+            <div class="form-group">
+                <label for="Senha">Senha</label>
+                <InputText type="password" @bind-Value="loginModel.Senha" class="form-control" id="Senha" placeholder="••••••••" />
+                <ValidationMessage For="@(() => loginModel.Senha)" />
+            </div>
+
+            <button type="submit" class="btn-login" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner"></span>
+                    <text>Entrando...</text>
+                }
+                else
+                {
+                    <text>Entrar</text>
+                }
+            </button>
+        </EditForm>
+
+        <p class="login-footer">
+            Não tem conta? <a href="/register">Cadastre-se</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginModel = new();
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        var result = await AuthService.LoginAsync(loginModel);
+
+        if (result.IsSuccess)
+        {
+            // Login bem-sucedido - redireciona
+            Nav.NavigateTo("/");
+        }
+        else
+        {
+            // Erro - mostra mensagem
+            errorMessage = result.ErrorMessage;
+        }
+
+        isLoading = false;
+    }
+}

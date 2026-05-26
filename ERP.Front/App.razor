@@ -1,0 +1,47 @@
+﻿@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+@code {
+    private bool isAuthenticated;
+    private bool isLoginPage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        isAuthenticated = !string.IsNullOrEmpty(token);
+        
+        var currentUrl = Navigation.Uri;
+        isLoginPage = currentUrl.Contains("/login");
+        
+        if (!isAuthenticated && !isLoginPage)
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@GetLayout()" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@GetLayout()">
+            <p role="alert">Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    private Type GetLayout()
+    {
+        var uri = Navigation.Uri;
+        if (uri.Contains("/login") || uri.Contains("/register"))
+        {
+            return typeof(AuthLayout);
+        }
+        return typeof(DesktopLayout);
+    }
+}
